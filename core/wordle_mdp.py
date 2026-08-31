@@ -91,6 +91,31 @@ def filter_candidates(candidates, guess, pattern):
 
 
 # ---------------------------------------------------------------------------
+# Word encoding for embedding-based DQN
+# ---------------------------------------------------------------------------
+
+def encode_word(word):
+    """Encode a 5-letter word as a 130-dim one-hot vector (5 positions × 26 letters).
+    This gives the DQN a fixed-size representation of any word, enabling
+    generalization to words not seen during training."""
+    import numpy as np
+    vec = np.zeros(130, dtype=np.float32)
+    for pos, ch in enumerate(word.lower()):
+        vec[pos * 26 + (ord(ch) - ord('a'))] = 1.0
+    return vec
+
+
+def encode_word_batch(words):
+    """Encode a list of words into a (N, 130) numpy array."""
+    import numpy as np
+    arr = np.zeros((len(words), 130), dtype=np.float32)
+    for i, word in enumerate(words):
+        for pos, ch in enumerate(word.lower()):
+            arr[i, pos * 26 + (ord(ch) - ord('a'))] = 1.0
+    return arr
+
+
+# ---------------------------------------------------------------------------
 # Policy: entropy-maximizing greedy action selection
 # ---------------------------------------------------------------------------
 

@@ -12,11 +12,14 @@ Creates multiple plots showing:
   - Epoch-by-epoch comparison
 """
 import json
+import os
 import argparse
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.ndimage import uniform_filter1d
 from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).parent.parent
+ASSETS_DIR = PROJECT_ROOT / "assets"
 
 
 def smooth_curve(data, window=20):
@@ -34,8 +37,9 @@ def load_metrics(path=str(Path(__file__).parent.parent / "data" / "training_metr
         return json.load(f)
 
 
-def plot_learning_curves(metrics):
+def plot_learning_curves(metrics, save_dir=None):
     """Plot win rate and avg guesses on a 2-panel layout."""
+    import matplotlib.pyplot as plt
     episodes = metrics["episodes"]
     win_rates = metrics["win_rates"]
     avg_guesses = metrics["avg_guesses"]
@@ -92,13 +96,16 @@ def plot_learning_curves(metrics):
              verticalalignment='top')
     
     plt.tight_layout()
-    plt.savefig('training_curves.png', dpi=300, bbox_inches='tight')
-    print("✓ Saved: training_curves.png")
-    plt.show()
+    save_path = os.path.join(save_dir or str(ASSETS_DIR), "training_curves.png")
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    print(f"[+] Saved: {save_path}")
+    plt.close(fig)
 
 
-def plot_combined_dashboard(metrics):
+def plot_combined_dashboard(metrics, save_dir=None):
     """Plot a 2x2 dashboard with learning curves and summary stats."""
+    import matplotlib.pyplot as plt
     episodes = metrics["episodes"]
     win_rates = metrics["win_rates"]
     avg_guesses = metrics["avg_guesses"]
@@ -181,13 +188,16 @@ Improvement:
              fontsize=10, verticalalignment='top', family='monospace',
              bbox=dict(boxstyle='round', facecolor='#f5f5f5', alpha=0.8, pad=1))
     
-    plt.savefig('training_dashboard.png', dpi=300, bbox_inches='tight')
-    print("✓ Saved: training_dashboard.png")
-    plt.show()
+    save_path = os.path.join(save_dir or str(ASSETS_DIR), "training_dashboard.png")
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    print(f"[+] Saved: {save_path}")
+    plt.close(fig)
 
 
-def plot_convergence_analysis(metrics):
+def plot_convergence_analysis(metrics, save_dir=None):
     """Analyze convergence: show learning rate and stability."""
+    import matplotlib.pyplot as plt
     episodes = metrics["episodes"]
     win_rates = metrics["win_rates"]
     avg_guesses = metrics["avg_guesses"]
@@ -222,13 +232,16 @@ def plot_convergence_analysis(metrics):
     ax2.grid(alpha=0.3, linestyle=':')
     
     plt.tight_layout()
-    plt.savefig('convergence_analysis.png', dpi=300, bbox_inches='tight')
-    print("✓ Saved: convergence_analysis.png")
-    plt.show()
+    save_path = os.path.join(save_dir or str(ASSETS_DIR), "convergence_analysis.png")
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    print(f"[+] Saved: {save_path}")
+    plt.close(fig)
 
 
-def plot_phase_analysis(metrics):
+def plot_phase_analysis(metrics, save_dir=None):
     """Divide training into phases and analyze each."""
+    import matplotlib.pyplot as plt
     episodes = metrics["episodes"]
     win_rates = metrics["win_rates"]
     avg_guesses = metrics["avg_guesses"]
@@ -296,9 +309,11 @@ def plot_phase_analysis(metrics):
                 f'{height:.2f}', ha='center', va='bottom', fontweight='bold', fontsize=10)
     
     plt.tight_layout()
-    plt.savefig('phase_analysis.png', dpi=300, bbox_inches='tight')
-    print("✓ Saved: phase_analysis.png")
-    plt.show()
+    save_path = os.path.join(save_dir or str(ASSETS_DIR), "phase_analysis.png")
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    print(f"[+] Saved: {save_path}")
+    plt.close(fig)
 
 
 def main():
@@ -307,7 +322,15 @@ def main():
                        help="Path to training_metrics.json")
     parser.add_argument("--all", action="store_true", 
                        help="Generate all plots (default: main dashboard only)")
+    parser.add_argument("--save_only", action="store_true",
+                       help="Save plots without showing (headless mode)")
+    parser.add_argument("--save_dir", type=str, default=str(ASSETS_DIR),
+                       help="Directory to save plots")
     args = parser.parse_args()
+    
+    if args.save_only:
+        import matplotlib
+        matplotlib.use('Agg')
     
     print("Loading training metrics...")
     metrics = load_metrics(args.metrics)
@@ -321,15 +344,15 @@ def main():
     print("\nGenerating plots...")
     
     # Main plots
-    plot_learning_curves(metrics)
-    plot_combined_dashboard(metrics)
+    plot_learning_curves(metrics, save_dir=args.save_dir)
+    plot_combined_dashboard(metrics, save_dir=args.save_dir)
     
     # Additional analysis if requested
     if args.all:
-        plot_convergence_analysis(metrics)
-        plot_phase_analysis(metrics)
+        plot_convergence_analysis(metrics, save_dir=args.save_dir)
+        plot_phase_analysis(metrics, save_dir=args.save_dir)
     
-    print("\n✓ All plots generated successfully!")
+    print("\n[+] All plots generated successfully!")
     if not args.all:
         print("  Tip: Run with --all flag for additional convergence and phase analysis plots")
 
