@@ -171,6 +171,13 @@ The main training loop that ties everything together.
                                    over 70% of training
 ```
 
+### Curriculum Learning & Win Rate Dynamics
+
+To successfully train the agent on the massive 8,636 word dictionary (as opposed to just 200 words), we use **Curriculum Learning** (`--curriculum`). 
+
+- **The Process**: The agent starts training on a tiny subset of 200 words. Once it masters them (or after a set number of episodes), the pool doubles to 400, then 800, up to 8,636.
+- **Win Rate Fluctuation**: In the terminal logs, you'll see the win rate (`wr=`) start very high (e.g., 90%+ on 200 words). Every time the curriculum expands (`>> Curriculum: expanded to X words...`), the win rate temporarily **drops** because the state and action spaces just got much harder. As training continues in that stage, the agent adapts, and the win rate climbs back up, finishing strong (e.g., ~80-88% overall on the final 20,000th step).
+
 ### Live Dashboard ([`TrainingDashboard`](file:///c:/Users/flexycode/Desktop/RL%20PROJECT/train.py#L62-L118))
 
 A matplotlib window with:

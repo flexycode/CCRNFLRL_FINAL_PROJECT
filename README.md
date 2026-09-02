@@ -108,11 +108,21 @@ python tools/play_live.py --agent dqn --model_path data/dqn_wordle_v2.pt --n_wor
 - `scipy`
 - `tqdm` (optional, has fallback)
 
-### Installation
+### Installation (CPU Default)
 
 ```bash
 pip install torch numpy matplotlib scipy tqdm
 ```
+
+### GPU / CUDA Acceleration (Highly Recommended)
+Training on the full 8,636 word dictionary for 20,000 episodes is computationally intensive. To speed up training (up to 3-6x faster):
+1. Ensure you have an NVIDIA GPU.
+2. Install the CUDA-enabled version of PyTorch by following the instructions on the [PyTorch website](https://pytorch.org/get-started/locally/).
+3. Example installation for CUDA 11.8 or 12.1:
+   ```bash
+   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+   ```
+4. Run the training script with `--device cuda`.
 
 ---
 
@@ -138,14 +148,35 @@ Starting training on 200 words (action space = 200)
 Training: 100%|████████████████| 2000/2000 [04:30<00:00, wr=94% ag=4.12 ε=0.05]
 ```
 
-#### Full-Scale Training with Curriculum (2,309 words, ~30–45 min)
-```bash
-python training/train.py --n_words 2309 --episodes 3000 --curriculum
-```
+#### Full-Scale Training Walkthrough (8,636 words, 20,000 episodes)
 
-#### Large-Scale Training (8,636 words, ~1–2 hours)
+To fully train the v2 agent using our exact setup, we use **Curriculum Learning**. This starts the agent on a small dictionary (200 words) and progressively expands it up to the full 8,636 words as it gets smarter.
+
+**Step 1: Launch Training**
 ```bash
-python training/train.py --n_words 8636 --episodes 5000 --curriculum
+python training/train.py --n_words 8636 --episodes 20000 --curriculum --eval_every 200 --train_every 8 --batch_size 256 --save_name dqn_wordle_v2_full.pt
+```
+*(Add `--device cuda` if you have a GPU set up for much faster training).*
+
+**Step 2: Understanding the Terminal Output**
+As training runs, you will see output like this:
+```text
+  >> Curriculum: expanded to 400 words at episode 2858
+  >> Curriculum: expanded to 800 words at episode 5715
+  >> Curriculum: expanded to 1600 words at episode 8572
+  >> Curriculum: expanded to 3200 words at episode 11429
+  >> Curriculum: expanded to 6400 words at episode 14286
+  >> Curriculum: expanded to 8636 words at episode 17143
+
+Training: 100%|##########| 20000/20000 [31:55<00:00, 10.44ep/s, wr=88% ag=4.07 ε=0.10 pool=8636]
+```
+**Why does the Win Rate fluctuate?** 
+When the curriculum expands the word pool (e.g., from 400 to 800 words), the agent is suddenly faced with a harder game. You will notice the win rate (`wr=`) drop temporarily immediately after an expansion. However, as the agent continues to train on the new, larger pool, it learns the new patterns and the win rate steadily climbs back up. By the end of 20,000 episodes, it stabilizes at a high win rate (~80-88%) on the complete dataset.
+
+**Step 3: Evaluate the Trained Model**
+Once training finishes, benchmark its performance (with out-of-distribution testing):
+```bash
+python training/benchmark_dqn.py --n_words 8636 --model_path data/dqn_wordle_v2_full.pt --ood --sample 500
 ```
 
 #### Advanced Training Options
