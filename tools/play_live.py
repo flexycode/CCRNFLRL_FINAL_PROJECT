@@ -1,112 +1,111 @@
 """
-Watch a single agent (DQN or entropy heuristic) play one Wordle game live,
-animated tile-by-tile on the classic Wordle board. Uses the shared
-WordleBoard renderer (board_renderer.py) - the same component train.py
-uses for its live demo games during training.
+Watch an agent play a single animated Wordle game.
+
+Supports both the entropy heuristic and the trained DQN v2 agent.
 
 Usage:
-    python3 play_live.py --agent heuristic --answer knoll
-    python3 play_live.py --agent dqn --model_path dqn_wordle.pt --n_words 200
-    python3 play_live.py --agent dqn --model_path dqn_wordle.pt --n_words 200 --speed 0.5
+    python tools/play_live.py --agent heuristic --answer knoll
+    python tools/play_live.py --agent dqn --model_path data/dqn_wordle_v2.pt --n_words 200
 """
 import argparse
-import random
-import matplotlib.pyplot as plt
-
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).parent.parent))
 
-from core.wordle_mdp import load_word_lists, score_guess, best_guess, filter_candidates
+import matplotlib.pyplot as plt
 from core.board_renderer import WordleBoard
+from core.wordle_mdp import (load_word_lists, best_guess, filter_candidates,
+                              score_guess, pattern_to_str)
+from core.wordle_env import WordleEnv, OBS_DIM, WORD_FEAT_DIM
 
 
-def play_heuristic(answer, answer_pool, guess_pool, max_guesses=6):
-    """Generator yielding (guess, pattern) one at a time, as they happen."""
-    candidates = list(answer_pool)
-    for _ in range(max_guesses):
-        guess = best_guess(candidates, guess_pool)
+def play_heuristic(answer, board, fig, answers, guesses, speed):
+    """Play a game using the entropy-greedy heuristic."""
+    candidates = list(answers)
+    for row in range(6):
+        guess = best_guess(candidates, guesses)
         pattern = score_guess(guess, answer)
-        yield guess, pattern
+        board.reveal_guess(fig.canvas, row, guess, pattern, animate=True)
+        print(f"  Turn {row+1}: {guess}  {pattern_to_str(pattern)}  ({len(candidates)} candidates)")
         if pattern == (2, 2, 2, 2, 2):
-            return
+            print(f"  [+] Solved in {row+1} guesses!")
+            return True
         candidates = filter_candidates(candidates, guess, pattern)
+    print("  [x] Failed to solve in 6 guesses")
+    return False
 
 
-def play_dqn(answer, model_path, n_words, max_guesses=6):
-    """Generator yielding (guess, pattern) one at a time, as they happen."""
-    from core.wordle_env import WordleEnv, OBS_DIM
+def play_dqn(answer, board, fig, word_pool, model_path, speed):
+    """Play a game using the trained DQN v2 agent."""
     from core.dqn_agent import DQNAgent
-
-    answers, _ = load_word_lists()
-    word_pool = answers[:n_words]
-
-    env = WordleEnv(answer_pool=word_pool, action_words=word_pool, seed=0)
-    agent = DQNAgent(obs_dim=OBS_DIM, n_actions=len(word_pool))
+    
+    env = WordleEnv(answer_pool=word_pool, action_words=word_pool)
+    agent = DQNAgent(obs_dim=OBS_DIM, word_dim=WORD_FEAT_DIM)
     agent.load(model_path)
-
+    
     obs = env.reset(answer=answer)
     done = False
-    while not done:
+    row = 0
+    
+    while not done and row < 6:
         mask = env.valid_action_mask()
-        action = agent.act(obs, mask, epsilon=0.0)
-        obs, reward, done, info = env.step(action)
-        yield info["guess"], info["pattern"]
+        word_feats, word_indices = env.valid_word_features(mask)
+        action_local = agent.act(obs, word_feats, epsilon=0.0)
+        action_idx = int(word_indices[action_local])
+        
+        obs, reward, done, info = env.step(action_idx)
+        board.reveal_guess(fig.canvas, row, info["guess"], info["pattern"], animate=True)
+        print(f"  Turn {row+1}: {info['guess']}  {pattern_to_str(info['pattern'])}  "
+              f"({info['candidates_remaining']} candidates remaining)")
+        
+        if info["solved"]:
+            print(f"  [+] Solved in {row+1} guesses!")
+            return True
+        row += 1
+    
+    if not info.get("solved"):
+        print("  [x] Failed to solve in 6 guesses")
+    return info.get("solved", False)
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--agent", choices=["heuristic", "dqn"], default="heuristic")
     parser.add_argument("--answer", type=str, default=None)
-    parser.add_argument("--model_path", type=str, default=str(Path(__file__).parent.parent / "data" / "dqn_wordle.pt"))
+    parser.add_argument("--model_path", type=str,
+                         default=str(Path(__file__).parent.parent / "data" / "dqn_wordle_v2.pt"))
     parser.add_argument("--n_words", type=int, default=200)
-    parser.add_argument("--speed", type=float, default=1.0,
-                         help="Speed multiplier for the animation. Lower = faster, higher = slower.")
+    parser.add_argument("--speed", type=float, default=1.0)
     args = parser.parse_args()
 
     answers, guesses = load_word_lists()
-
-    if args.agent == "heuristic":
-        answer = args.answer or random.choice(answers)
-        gen = play_heuristic(answer, answers, guesses)
-        title = "Entropy Heuristic"
+    
+    if args.answer:
+        answer = args.answer.lower()
     else:
-        word_pool = answers[:args.n_words]
-        answer = args.answer or random.choice(word_pool)
-        gen = play_dqn(answer, args.model_path, args.n_words)
-        title = "DQN Agent"
-
+        import random
+        answer = random.choice(answers[:args.n_words] if args.agent == "dqn" else answers)
+    
+    print(f"\n{'='*40}")
+    print(f"Agent: {args.agent.upper()}")
     print(f"Answer: {answer}")
+    print(f"{'='*40}\n")
 
-    plt.ion()
-    fig, ax = plt.subplots(figsize=(4, 5))
-    ax.set_title(title, fontsize=13, fontweight="bold", pad=12)
+    fig, ax = plt.subplots(figsize=(5, 6))
+    ax.set_title(f"{'DQN v2' if args.agent == 'dqn' else 'Entropy Heuristic'} — playing '{answer}'",
+                 fontsize=12, fontweight='bold')
     board = WordleBoard(ax, speed=args.speed)
-    status_text = fig.text(0.5, 0.02, "", ha="center", fontsize=11)
     plt.tight_layout()
     plt.show(block=False)
-    plt.pause(0.3)
+    plt.pause(0.5)
 
-    solved = False
-    n_guesses = 0
-    for row, (guess, pattern) in enumerate(gen):
-        n_guesses += 1
-        print(f"  {guess} -> {pattern}")
-        board.reveal_guess(fig.canvas, row, guess, pattern, animate=True)
-        if pattern == (2, 2, 2, 2, 2):
-            solved = True
-            break
-
-    if solved:
-        status_text.set_text(f"Solved in {n_guesses} guesses!")
-        status_text.set_color("#2e7d32")
+    if args.agent == "heuristic":
+        play_heuristic(answer, board, fig, answers, guesses, args.speed)
     else:
-        status_text.set_text(f"Failed (answer: {answer.upper()})")
-        status_text.set_color("#c62828")
-    fig.canvas.draw()
+        word_pool = answers[:args.n_words]
+        play_dqn(answer, board, fig, word_pool, args.model_path, args.speed)
 
-    print("Close the window to exit.")
-    plt.ioff()
     plt.show()
 
 
