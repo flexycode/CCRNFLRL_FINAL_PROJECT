@@ -309,6 +309,127 @@ Scorer:         256 → 128 → 1      (concat → Q-value)
 
 ---
 
+## System Architecture
+
+> For the full detailed architecture with all diagrams, see [docs/system_architecture.md](docs/system_architecture.md).
+
+### High-Level System Architecture
+
+```mermaid
+flowchart TB
+    subgraph DATA["Data Layer"]
+        WJ["wordles.json<br>(2,309 answers)"]
+        NJ["nonwordles.json<br>(8,636 valid guesses)"]
+        MP["dqn_wordle_v2.pt<br>(Trained Model)"]
+    end
+
+    subgraph CORE["Core Engine (core/)"]
+        MDP["wordle_mdp.py<br>MDP Formulation"]
+        ENV["wordle_env.py<br>WordleEnv"]
+        AGT["dqn_agent.py<br>DQNAgent"]
+        BRD["board_renderer.py<br>Visualization"]
+    end
+
+    subgraph TRAIN["Training Pipeline (training/)"]
+        TR["train.py"]
+        BM["benchmark_dqn.py"]
+        CMP["compare.py"]
+    end
+
+    subgraph ANALYSIS["Analysis (analysis/)"]
+        PT["plot_training.py"]
+        GR["generate_results.py"]
+    end
+
+    subgraph TOOLS["Tools (tools/)"]
+        PL["play_live.py"]
+        SA["solve_assistant.py"]
+    end
+
+    subgraph ASSETS["Output (assets/)"]
+        IMG["training_curves.png<br>benchmark_results.png<br>comparison_chart.png"]
+    end
+
+    WJ & NJ --> MDP --> ENV --> AGT
+    AGT --> TR --> MP
+    AGT & ENV --> BM & CMP
+    TR --> ANALYSIS --> ASSETS
+    BM & CMP --> ASSETS
+    MDP & BRD & AGT --> TOOLS
+```
+
+### Neural Network Architecture (EmbeddingQNetwork)
+
+```mermaid
+flowchart LR
+    subgraph INPUT["Inputs"]
+        OBS["Observation<br>(183 dims)"]
+        WORD["Word Feature<br>(130 dims)"]
+    end
+
+    subgraph STATE_ENC["State Encoder"]
+        S1["Linear(183, 256)"] --> S2["ReLU"] --> S3["Linear(256, 128)"] --> S4["ReLU"]
+    end
+
+    subgraph WORD_ENC["Word Encoder"]
+        W1["Linear(130, 128)"] --> W2["ReLU"]
+    end
+
+    subgraph SCORER["Scorer"]
+        CONCAT["Concat (256)"] --> SC1["Linear(256, 128)"] --> SC2["ReLU"] --> SC3["Linear(128, 1)"]
+    end
+
+    OBS --> S1
+    WORD --> W1
+    S4 --> CONCAT
+    W2 --> CONCAT
+    SC3 --> QVAL["Q-Value"]
+```
+
+### RL Training Loop
+
+```mermaid
+flowchart LR
+    A["env.reset()"] --> B["Observe State"]
+    B --> C["Agent: epsilon-greedy<br>over word embeddings"]
+    C --> D["env.step(action)"]
+    D --> E{"Done?"}
+    E -- No --> F["Store in PER<br>Train every N steps"]
+    F --> B
+    E -- Yes --> G{"More episodes?"}
+    G -- Yes --> A
+    G -- No --> H["Save model +<br>metrics + plots"]
+```
+
+### Agent Decision Pipeline
+
+```mermaid
+sequenceDiagram
+    participant Env as WordleEnv
+    participant Agent as DQNAgent
+    participant Net as EmbeddingQNetwork
+    participant Buffer as Replay Buffer
+
+    Env->>Agent: obs (183-dim)
+    Agent->>Env: valid_word_features(mask)
+    Env-->>Agent: word_feats (N x 130)
+
+    alt Explore
+        Agent->>Agent: Random valid word
+    else Exploit
+        Agent->>Net: forward(obs, word_feats)
+        Net-->>Agent: Q-values
+        Agent->>Agent: argmax(Q)
+    end
+
+    Agent->>Env: step(action_idx)
+    Env-->>Agent: next_obs, reward, done
+    Agent->>Buffer: store (prioritized)
+    Agent->>Net: train_step (Double DQN)
+```
+
+---
+
 ## Key Results
 
 ### Entropy-Greedy Heuristic (Baseline)
@@ -377,6 +498,7 @@ Old v1 model checkpoints (not compatible with v2 architecture).
 
 | Document | Description |
 |----------|-------------|
+| [System Architecture](docs/system_architecture.md) | Full architecture diagrams (Mermaid) |
 | [Walkthrough Guide](docs/walkthrough.md) | Step-by-step usage guide |
 | [Project Timeline](docs/timeline.md) | 1-month project plan with milestones |
 | [Coverage Matrix](docs/coverage.md) | Implementation coverage and test matrix |
