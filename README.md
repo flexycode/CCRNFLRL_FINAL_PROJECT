@@ -358,6 +358,8 @@ flowchart TB
     MDP & BRD & AGT --> TOOLS
 ```
 
+![High-Level System Architecture](assets/system%20architecture/high-resolution/high_level_architecture.jpeg)
+
 ### Neural Network Architecture (EmbeddingQNetwork)
 
 ```mermaid
@@ -386,6 +388,8 @@ flowchart LR
     SC3 --> QVAL["Q-Value"]
 ```
 
+![Neural Network Architecture](assets/system%20architecture/high-resolution/neural_network_architecture.jpeg)
+
 ### RL Training Loop
 
 ```mermaid
@@ -400,6 +404,8 @@ flowchart LR
     G -- Yes --> A
     G -- No --> H["Save model +<br>metrics + plots"]
 ```
+
+![RL Training Loop](assets/system%20architecture/high-resolution/rl_training_loop.jpeg)
 
 ### Agent Decision Pipeline
 
@@ -427,6 +433,8 @@ sequenceDiagram
     Agent->>Buffer: store (prioritized)
     Agent->>Net: train_step (Double DQN)
 ```
+
+![Agent Decision Pipeline](assets/system%20architecture/high-resolution/agent_decision_pipeline.jpeg)
 
 ---
 
