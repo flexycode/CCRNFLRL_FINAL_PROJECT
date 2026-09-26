@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Architecture | Wordle RL</title>
+  <meta name="description" content="Deep dive into the EmbeddingQNetwork architecture, MDP formulation, RL training loop, and agent decision pipeline.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏗️</text></svg>">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-brand">
+        <span class="brand-icon">
+          <span class="tile">W</span>
+          <span class="tile">R</span>
+          <span class="tile">L</span>
+        </span>
+        Wordle RL
+      </a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links">
+        <li><a href="index.html">🏠 Home</a></li>
+        <li><a href="play.html">🎮 Play</a></li>
+        <li><a href="results.html">📊 Results</a></li>
+        <li><a href="architecture.html" class="active">🏗️ Architecture</a></li>
+        <li><a href="team.html">👥 Team</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <section class="section">
+      <div class="container">
+        <div class="section-header fade-in">
+          <span class="section-label">Technical Deep Dive</span>
+          <h1 class="section-title">System Architecture</h1>
+          <p class="section-subtitle">How the embedding-based DQN agent and entropy heuristic solve Wordle.</p>
+        </div>
+
+        <!-- The Wordle MDP -->
+        <div class="arch-section fade-in">
+          <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: var(--space-md);">
+            🎲 The Wordle MDP
+          </h2>
+          <p class="card-text mb-lg">Wordle is formulated as a Markov Decision Process with the following components:</p>
+
+          <div class="mdp-grid">
+            <div class="mdp-card">
+              <div class="mdp-label">State (183 dims)</div>
+              <div class="mdp-value">Observation Vector</div>
+              <div class="mdp-detail">
+                <strong>Green letters:</strong> 5×26 = 130 dims<br>
+                <strong>Yellow letters:</strong> 26 dims<br>
+                <strong>Gray letters:</strong> 26 dims<br>
+                <strong>Remaining guesses:</strong> 1 dim (normalized)
+              </div>
+            </div>
+            <div class="mdp-card">
+              <div class="mdp-label">Action</div>
+              <div class="mdp-value">Choose a 5-letter Word</div>
+              <div class="mdp-detail">
+                Action scored via the embedding network — the agent evaluates each candidate word by computing Q(state, word) through the neural network.
+              </div>
+            </div>
+            <div class="mdp-card">
+              <div class="mdp-label">Transition</div>
+              <div class="mdp-value">Stochastic Feedback</div>
+              <div class="mdp-detail">
+                Each guess produces one of 3<sup>5</sup> = 243 possible feedback patterns (green/yellow/gray), weighted by how many candidates would produce that pattern.
+              </div>
+            </div>
+            <div class="mdp-card">
+              <div class="mdp-label">Reward</div>
+              <div class="mdp-value">-1 per Guess + Bonuses</div>
+              <div class="mdp-detail">
+                <strong>-1</strong> per guess taken<br>
+                <strong>+info gain</strong> bonus for reducing candidates<br>
+                <strong>+progressive solve</strong> bonus for winning
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- High-Level Architecture -->
+        <div class="arch-section fade-in">
+          <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: var(--space-md);">
+            🗂 High-Level System Architecture
+          </h2>
+          <p class="card-text mb-lg">The project is organized into core components, training pipeline, analysis tools, and interactive demos.</p>
+          <div class="arch-diagram">
+            <img src="assets/architecture/high_level_architecture.png" alt="High-Level System Architecture" loading="lazy">
+          </div>
+        </div>
+
+        <!-- Neural Network Architecture -->
+        <div class="arch-section fade-in">
+          <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: var(--space-md);">
+            🧠 Neural Network Architecture (EmbeddingQNetwork)
+          </h2>
+          <p class="card-text mb-lg">Unlike traditional DQN which outputs a Q-value for each fixed word index, the v2 agent uses <strong>word embeddings</strong> to score any candidate word.</p>
+
+          <div class="arch-diagram mb-lg">
+            <img src="assets/architecture/neural_network_architecture.png" alt="Neural Network Architecture" loading="lazy">
+          </div>
+
+          <div class="code-block">
+            <pre><span class="comment"># EmbeddingQNetwork Architecture</span>
+
+<span class="keyword">State Encoder:</span>  183 → 256 → ReLU → 128 → ReLU   <span class="comment"># observation → state embedding</span>
+<span class="keyword">Word Encoder:</span>   130 → 128 → ReLU                  <span class="comment"># word one-hot → word embedding</span>
+<span class="keyword">Scorer:</span>         256 → 128 → ReLU → 1               <span class="comment"># concat(state, word) → Q-value</span>
+
+<span class="comment"># Why this matters:</span>
+<span class="comment"># The agent learns WHAT MAKES A GOOD GUESS (letter patterns, positional info)</span>
+<span class="comment"># rather than memorizing which word index to pick.</span>
+<span class="comment"># This lets it generalize to words never seen during training.</span></pre>
+          </div>
+        </div>
+
+        <!-- RL Training Loop -->
+        <div class="arch-section fade-in">
+          <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: var(--space-md);">
+            🔄 RL Training Loop
+          </h2>
+          <p class="card-text mb-lg">The agent trains using Double DQN with Prioritized Experience Replay, processing 20,000 episodes with curriculum learning.</p>
+
+          <div class="arch-diagram mb-lg">
+            <img src="assets/architecture/rl_training_loop.png" alt="RL Training Loop" loading="lazy">
+          </div>
+
+          <div class="card-grid">
+            <div class="card">
+              <h3 class="card-title" style="color: var(--accent-primary);">Double DQN</h3>
+              <p class="card-text">Uses a separate target network to reduce Q-value overestimation. The online network selects actions while the target network evaluates them.</p>
+            </div>
+            <div class="card">
+              <h3 class="card-title" style="color: var(--accent-secondary);">Prioritized Experience Replay</h3>
+              <p class="card-text">Samples transitions with high TD-error more frequently, improving sample efficiency. Importance sampling weights correct for the sampling bias.</p>
+            </div>
+            <div class="card">
+              <h3 class="card-title" style="color: var(--accent-tertiary);">Curriculum Learning</h3>
+              <p class="card-text">Starts training on 200 words and progressively expands to 8,636 words. This helps the agent learn basic strategies before tackling the full dictionary.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Agent Decision Pipeline -->
+        <div class="arch-section fade-in">
+          <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: var(--space-md);">
+            🎯 Agent Decision Pipeline
+          </h2>
+          <p class="card-text mb-lg">How the agent chooses a word at each step during gameplay.</p>
+
+          <div class="arch-diagram mb-lg">
+            <img src="assets/architecture/agent_decision_pipeline.png" alt="Agent Decision Pipeline" loading="lazy">
+          </div>
+
+          <div class="code-block">
+            <pre><span class="comment"># Agent decision flow at each turn:</span>
+
+<span class="number">1.</span> <span class="keyword">Observe</span> state (183-dim feature vector from environment)
+<span class="number">2.</span> <span class="keyword">Get</span> valid action mask (which words are still allowed)
+<span class="number">3.</span> <span class="keyword">Compute</span> word features for all valid words (N × 130)
+
+<span class="keyword">if</span> random() < epsilon:       <span class="comment"># Explore</span>
+    action = random valid word
+<span class="keyword">else:</span>                         <span class="comment"># Exploit</span>
+    Q_values = network.forward(state, word_features)  <span class="comment"># N Q-values</span>
+    action = argmax(Q_values)
+
+<span class="number">4.</span> <span class="keyword">Execute</span> action in environment → next_state, reward, done
+<span class="number">5.</span> <span class="keyword">Store</span> transition in Prioritized Replay Buffer
+<span class="number">6.</span> <span class="keyword">Train</span> every N steps using Double DQN loss</pre>
+          </div>
+        </div>
+
+        <!-- Entropy Heuristic -->
+        <div class="arch-section fade-in">
+          <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: var(--space-md);">
+            📐 Entropy-Greedy Heuristic
+          </h2>
+          <p class="card-text mb-lg">The baseline solver uses information theory to pick the most informative guess at each step. This is the same approach used by 3Blue1Brown's famous Wordle solver.</p>
+
+          <div class="code-block">
+            <pre><span class="comment"># The entropy heuristic at each turn:</span>
+
+<span class="keyword">for each</span> possible guess g <span class="keyword">in</span> word_pool:
+    <span class="comment"># Count how many candidates produce each feedback pattern</span>
+    pattern_counts = Counter(score_guess(g, ans) <span class="keyword">for</span> ans <span class="keyword">in</span> candidates)
+
+    <span class="comment"># Calculate Shannon entropy of the pattern distribution</span>
+    entropy = -Σ (p · log₂(p))  <span class="keyword">where</span> p = count/total
+
+    <span class="comment"># Higher entropy = guess splits candidates more evenly = more info gained</span>
+
+<span class="keyword">return</span> argmax(entropy)  <span class="comment"># best_guess = max information gain</span>
+
+<span class="comment"># Why it works:</span>
+<span class="comment"># RAISE has 5.88 bits of information as an opener</span>
+<span class="comment"># This means it divides 2,309 candidates into ~60 roughly equal groups</span>
+<span class="comment"># Each subsequent guess further narrows the field exponentially</span></pre>
+          </div>
+        </div>
+
+        <!-- Key Insights -->
+        <div class="arch-section fade-in">
+          <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: var(--space-md);">
+            💡 Key Insights
+          </h2>
+          <div class="card-grid">
+            <div class="card">
+              <h3 class="card-title">Why DQN ≠ Perfect</h3>
+              <p class="card-text">The entropy heuristic is near-optimal (100% win rate) because it directly computes information gain. DQN learns an approximate policy through trial-and-error, trading some optimality for the ability to generalize to unseen words.</p>
+            </div>
+            <div class="card">
+              <h3 class="card-title">Generalization is the Win</h3>
+              <p class="card-text">The embedding architecture lets DQN v2 evaluate any word — even ones not in its training pool. This is the key research contribution: an RL agent that learns what makes a good Wordle guess rather than memorizing specific words.</p>
+            </div>
+            <div class="card">
+              <h3 class="card-title">Curriculum ≫ Brute Force</h3>
+              <p class="card-text">Training on all 8,636 words from scratch is too hard for the agent. Curriculum learning (200→400→...→8,636) lets it build competence incrementally, achieving 70%+ win rate on the full dictionary.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox">
+    <img id="lightbox-img" src="" alt="">
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <span>Wordle RL Solver — Reinforcement Learning Final Project</span>
+      <span>EmbeddingDQN v2 · Double DQN · PER · Curriculum Learning</span>
+    </div>
+  </footer>
+
+  <script src="js/nav.js"></script>
+</body>
+</html>

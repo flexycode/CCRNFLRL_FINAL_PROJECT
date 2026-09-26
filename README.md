@@ -110,9 +110,21 @@ python tools/play_live.py --agent dqn --model_path data/dqn_wordle_v2.pt --n_wor
 
 ### Installation (CPU Default)
 
+We strongly recommend using a virtual environment.
+
+**1. Activate the virtual environment:**
+If you're using **PowerShell** (the default in VS Code):
+```powershell
+.\venv\Scripts\Activate.ps1
+```
+*(If you are using regular Command Prompt, use `venv\Scripts\activate.bat` instead)*
+
+**2. Install the required dependencies:**
 ```bash
 pip install torch numpy matplotlib scipy tqdm
 ```
+
+> **Note on Python 3.13+:** If you encounter a `DLL load failed` error when running the application, it might be because PyTorch doesn't fully support Python 3.13 yet. If this happens, re-creating your virtual environment with a slightly older Python version (like 3.11 or 3.12) will solve the issue!
 
 ### GPU / CUDA Acceleration (Highly Recommended)
 Training on the full 8,636 word dictionary for 20,000 episodes is computationally intensive. To speed up training (up to 3-6x faster):
@@ -268,6 +280,21 @@ python tools/play_live.py --agent dqn --model_path data/dqn_wordle_v2.pt --n_wor
 ```bash
 python tools/solve_assistant.py
 ```
+
+---
+
+### 5. Web App
+
+The project includes a complete static web application (HTML/CSS/JS) that showcases the RL results, interactive charts, system architecture, and an interactive browser-based Wordle solver!
+
+**To run the web app locally:**
+```bash
+# Start a local HTTP server in the webapp directory
+python -m http.server 8080 -d webapp
+```
+Then open your browser and navigate to [http://localhost:8080](http://localhost:8080).
+
+*Note: The web app is purely static and is also ready to be deployed instantly to Netlify or GitHub Pages without any backend server.*
 
 ---
 

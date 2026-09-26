@@ -1,0 +1,52 @@
+{
+  "in_distribution": {
+    "total_tested": 200,
+    "solved": 197,
+    "failed": 3,
+    "win_rate": 0.985,
+    "avg_guesses": 3.6345177664974617,
+    "guess_distribution": {
+      "1": 1,
+      "2": 23,
+      "3": 70,
+      "4": 64,
+      "5": 31,
+      "6": 8
+    },
+    "failed_words": [
+      "abaca",
+      "agape",
+      "agave"
+    ]
+  },
+  "out_of_distribution": {
+    "total_tested": 200,
+    "solved": 0,
+    "failed": 200,
+    "win_rate": 0.0,
+    "avg_guesses": 0.0,
+    "guess_distribution": {},
+    "failed_words": [
+      "alley",
+      "allod",
+      "allot",
+      "allow",
+      "alloy",
+      "allyl",
+      "almah",
+      "almas",
+      "almeh",
+      "almes",
+      "almud",
+      "almug",
+      "aloes",
+      "aloft",
+      "aloha",
+      "aloin",
+      "alone",
+      "along",
+      "aloof",
+      "aloud"
+    ]
+  }
+}

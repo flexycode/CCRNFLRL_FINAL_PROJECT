@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Training & Benchmark Results | Wordle RL</title>
+  <meta name="description" content="Interactive visualizations of DQN training curves, benchmark results, and head-to-head comparison with the entropy heuristic.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-brand">
+        <span class="brand-icon">
+          <span class="tile">W</span>
+          <span class="tile">R</span>
+          <span class="tile">L</span>
+        </span>
+        Wordle RL
+      </a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links">
+        <li><a href="index.html">🏠 Home</a></li>
+        <li><a href="play.html">🎮 Play</a></li>
+        <li><a href="results.html" class="active">📊 Results</a></li>
+        <li><a href="architecture.html">🏗️ Architecture</a></li>
+        <li><a href="team.html">👥 Team</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Training Summary Stats -->
+    <section class="section">
+      <div class="container">
+        <div class="section-header fade-in">
+          <span class="section-label">Training & Benchmarks</span>
+          <h1 class="section-title">Results Dashboard</h1>
+          <p class="section-subtitle">Interactive visualizations from 20,000 episodes of DQN training with curriculum learning.</p>
+        </div>
+
+        <div class="stats-row fade-in">
+          <div class="stat-card">
+            <div class="stat-value green" id="stat-final-wr">—</div>
+            <div class="stat-label">Final Win Rate</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value purple" id="stat-final-ag">—</div>
+            <div class="stat-label">Final Avg Guesses</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value teal" id="stat-training-time">—</div>
+            <div class="stat-label">Training Time</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value pink" id="stat-architecture">—</div>
+            <div class="stat-label">Architecture</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Training Charts -->
+    <section class="section" style="padding-top: 0;">
+      <div class="container">
+        <h2 class="section-title text-left fade-in" style="font-size: 1.5rem;">📈 Training Progress</h2>
+        <p class="card-text mb-lg fade-in">Win rate and average guesses over 20,000 episodes with curriculum learning (200→8,636 words).</p>
+
+        <div class="chart-container fade-in mb-lg">
+          <canvas id="training-chart" height="300"></canvas>
+        </div>
+
+        <div class="chart-container fade-in">
+          <canvas id="loss-chart" height="200"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Benchmark Results -->
+    <section class="section" id="benchmarks">
+      <div class="container">
+        <h2 class="section-title text-left fade-in" style="font-size: 1.5rem;">🏆 Benchmark Results</h2>
+        <p class="card-text mb-lg fade-in">DQN Agent tested on 200 words (in-distribution) with guess distribution breakdown.</p>
+
+        <div class="card-grid fade-in">
+          <!-- In-distribution -->
+          <div class="card">
+            <span class="badge badge-green mb-md">In-Distribution</span>
+            <h3 class="card-title">DQN on Training Pool</h3>
+            <div style="display: flex; gap: 1.5rem; margin: 1rem 0;">
+              <div>
+                <div style="font-size: 2rem; font-weight: 800; color: var(--wordle-green-bright);" id="bench-id-wr">—</div>
+                <div class="stat-label">Win Rate</div>
+              </div>
+              <div>
+                <div style="font-size: 2rem; font-weight: 800; color: var(--chart-blue);" id="bench-id-ag">—</div>
+                <div class="stat-label">Avg Guesses</div>
+              </div>
+            </div>
+            <div id="bench-id-dist" class="mt-md"></div>
+            <div id="bench-id-failed" class="mt-md" style="font-size: 0.82rem; color: var(--text-muted);"></div>
+          </div>
+
+          <!-- Out-of-distribution -->
+          <div class="card">
+            <span class="badge badge-purple mb-md">Out-of-Distribution</span>
+            <h3 class="card-title">DQN on Unseen Words</h3>
+            <div style="display: flex; gap: 1.5rem; margin: 1rem 0;">
+              <div>
+                <div style="font-size: 2rem; font-weight: 800; color: var(--chart-red);" id="bench-ood-wr">—</div>
+                <div class="stat-label">Win Rate</div>
+              </div>
+              <div>
+                <div style="font-size: 2rem; font-weight: 800; color: var(--chart-blue);" id="bench-ood-ag">—</div>
+                <div class="stat-label">Avg Guesses</div>
+              </div>
+            </div>
+            <div class="mt-md" style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6;">
+              <p>The DQN v2 agent uses <strong>word embeddings</strong> rather than fixed word indices, enabling it to score any candidate word — even ones it has never seen during training.</p>
+              <p class="mt-sm">This is the key architectural advantage over v1, which could only choose from its training pool.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Guess Distribution Chart -->
+        <div class="chart-container fade-in mt-lg">
+          <canvas id="dist-chart" height="200"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Head-to-Head Comparison -->
+    <section class="section">
+      <div class="container">
+        <h2 class="section-title text-left fade-in" style="font-size: 1.5rem;">⚔️ Head-to-Head: DQN vs Heuristic</h2>
+        <p class="card-text mb-lg fade-in">Direct comparison on the same 200-word pool.</p>
+
+        <div class="comparison-grid fade-in">
+          <div class="comparison-card highlight">
+            <span class="badge badge-purple">DQN Agent</span>
+            <div class="big-stat mt-md" style="color: var(--accent-primary);" id="cmp-dqn-wr">—</div>
+            <div class="stat-desc">Win Rate</div>
+            <div class="big-stat mt-md" style="color: var(--chart-blue); font-size: 2rem;" id="cmp-dqn-ag">—</div>
+            <div class="stat-desc">Avg Guesses</div>
+          </div>
+          <div class="comparison-card">
+            <span class="badge badge-green">Entropy Heuristic</span>
+            <div class="big-stat mt-md" style="color: var(--wordle-green-bright);" id="cmp-heur-wr">—</div>
+            <div class="stat-desc">Win Rate</div>
+            <div class="big-stat mt-md" style="color: var(--chart-blue); font-size: 2rem;" id="cmp-heur-ag">—</div>
+            <div class="stat-desc">Avg Guesses</div>
+          </div>
+        </div>
+
+        <!-- Radar Chart -->
+        <div class="chart-container fade-in mt-lg" style="max-width: 500px; margin-left: auto; margin-right: auto;">
+          <canvas id="radar-chart" height="400"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Generated Charts Gallery -->
+    <section class="section">
+      <div class="container">
+        <h2 class="section-title text-left fade-in" style="font-size: 1.5rem;">🖼️ Generated Visualizations</h2>
+        <p class="card-text mb-lg fade-in">Auto-generated matplotlib charts from training and benchmarking runs.</p>
+
+        <div class="gallery-grid fade-in">
+          <div class="gallery-item">
+            <img src="assets/training_curves.png" alt="Training Curves" loading="lazy">
+            <div class="caption">Training Curves — Win Rate & Avg Guesses over Episodes</div>
+          </div>
+          <div class="gallery-item">
+            <img src="assets/training_dashboard.png" alt="Training Dashboard" loading="lazy">
+            <div class="caption">Training Dashboard — Comprehensive Summary</div>
+          </div>
+          <div class="gallery-item">
+            <img src="assets/benchmark_results.png" alt="Benchmark Results" loading="lazy">
+            <div class="caption">Benchmark Results — Guess Distribution</div>
+          </div>
+          <div class="gallery-item">
+            <img src="assets/comparison_chart.png" alt="Comparison Chart" loading="lazy">
+            <div class="caption">DQN vs Entropy Heuristic Comparison</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox">
+    <img id="lightbox-img" src="" alt="">
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <span>Wordle RL Solver — Reinforcement Learning Final Project</span>
+      <span>Training: 20,000 Episodes · EmbeddingDQN_v2 · CPU</span>
+    </div>
+  </footer>
+
+  <script src="js/nav.js"></script>
+  <script src="js/charts.js"></script>
+  <script>
+    async function initResults() {
+      try {
+        const [trainingRes, benchmarkRes, comparisonRes] = await Promise.all([
+          fetch('data/training_metrics.json'),
+          fetch('data/benchmark_results.json'),
+          fetch('data/comparison_results.json')
+        ]);
+
+        const training = await trainingRes.json();
+        const benchmark = await benchmarkRes.json();
+        const comparison = await comparisonRes.json();
+
+        // Summary stats
+        document.getElementById('stat-final-wr').textContent =
+          (training.final_win_rate * 100).toFixed(1) + '%';
+        document.getElementById('stat-final-ag').textContent =
+          training.final_avg_guesses.toFixed(2);
+        document.getElementById('stat-training-time').textContent =
+          training.training_time_str;
+        document.getElementById('stat-architecture').textContent =
+          training.architecture.replace('_', ' ');
+
+        // Training charts
+        Charts.createTrainingChart('training-chart', training);
+        Charts.createLossChart('loss-chart', training);
+
+        // Benchmark: In-distribution
+        const id = benchmark.in_distribution;
+        document.getElementById('bench-id-wr').textContent =
+          (id.win_rate * 100).toFixed(1) + '%';
+        document.getElementById('bench-id-ag').textContent =
+          id.avg_guesses.toFixed(2);
+
+        // Build distribution bars
+        if (id.guess_distribution) {
+          const maxVal = Math.max(...Object.values(id.guess_distribution), 1);
+          let html = '<div class="dist-chart">';
+          for (let i = 1; i <= 6; i++) {
+            const val = id.guess_distribution[String(i)] || 0;
+            const pct = Math.max(val / maxVal * 100, 8);
+            html += `
+              <div class="dist-row">
+                <span class="dist-label">${i}</span>
+                <div class="dist-bar green" style="width: ${pct}%;">${val}</div>
+              </div>`;
+          }
+          html += '</div>';
+          document.getElementById('bench-id-dist').innerHTML = html;
+        }
+
+        if (id.failed_words && id.failed_words.length > 0) {
+          document.getElementById('bench-id-failed').textContent =
+            `Failed words: ${id.failed_words.join(', ')}`;
+        }
+
+        // Benchmark: OOD
+        const ood = benchmark.out_of_distribution;
+        document.getElementById('bench-ood-wr').textContent =
+          (ood.win_rate * 100).toFixed(1) + '%';
+        document.getElementById('bench-ood-ag').textContent =
+          ood.avg_guesses > 0 ? ood.avg_guesses.toFixed(2) : 'N/A';
+
+        // Distribution chart
+        if (id.guess_distribution) {
+          Charts.createDistChart('dist-chart', id.guess_distribution, 'DQN Guess Distribution (In-Distribution)');
+        }
+
+        // Comparison
+        document.getElementById('cmp-dqn-wr').textContent =
+          (comparison.dqn.win_rate * 100).toFixed(1) + '%';
+        document.getElementById('cmp-dqn-ag').textContent =
+          comparison.dqn.avg_guesses.toFixed(2);
+        document.getElementById('cmp-heur-wr').textContent =
+          (comparison.heuristic.win_rate * 100).toFixed(1) + '%';
+        document.getElementById('cmp-heur-ag').textContent =
+          comparison.heuristic.avg_guesses.toFixed(2);
+
+        // Radar chart
+        Charts.createComparisonRadar('radar-chart', comparison.dqn, comparison.heuristic);
+
+      } catch (err) {
+        console.error('Failed to load results data:', err);
+      }
+    }
+
+    initResults();
+  </script>
+</body>
+</html>

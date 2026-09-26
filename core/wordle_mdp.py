@@ -78,7 +78,11 @@ def score_guess(guess: str, answer: str) -> tuple:
 
 
 def pattern_to_str(pattern: tuple) -> str:
-    symbols = {0: "\u2b1c", 1: "\U0001f7e8", 2: "\U0001f7e9"}  # white/yellow/green squares
+    import sys
+    if sys.stdout.encoding and sys.stdout.encoding.lower() not in ['utf-8', 'utf8']:
+        symbols = {0: "-", 1: "Y", 2: "G"}
+    else:
+        symbols = {0: "\u2b1c", 1: "\U0001f7e8", 2: "\U0001f7e9"}  # white/yellow/green squares
     return "".join(symbols[p] for p in pattern)
 
 

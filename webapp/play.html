@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Play Wordle — AI Solver Demo | Wordle RL</title>
+  <meta name="description" content="Play Wordle interactively or watch the AI entropy-greedy solver play step-by-step with animations.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🟩</text></svg>">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-brand">
+        <span class="brand-icon">
+          <span class="tile">W</span>
+          <span class="tile">R</span>
+          <span class="tile">L</span>
+        </span>
+        Wordle RL
+      </a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links">
+        <li><a href="index.html">🏠 Home</a></li>
+        <li><a href="play.html" class="active">🎮 Play</a></li>
+        <li><a href="results.html">📊 Results</a></li>
+        <li><a href="architecture.html">🏗️ Architecture</a></li>
+        <li><a href="team.html">👥 Team</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <section class="section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label">Interactive Demo</span>
+          <h1 class="section-title">Play Wordle</h1>
+          <p class="section-subtitle">Play yourself or let the AI entropy-greedy solver demonstrate how it works.</p>
+        </div>
+
+        <!-- Game Controls -->
+        <div class="game-controls mb-lg" id="game-controls">
+          <button class="btn btn-primary" id="btn-new-game" onclick="startNewGame()">🔄 New Game</button>
+          <button class="btn btn-success" id="btn-ai-solve" onclick="startAISolve()">🤖 Let AI Solve</button>
+          <div class="speed-control">
+            <label for="speed-slider">Speed:</label>
+            <input type="range" id="speed-slider" min="100" max="1500" value="600" step="100"
+                   oninput="Game.setAISpeed(parseInt(this.value)); document.getElementById('speed-val').textContent = this.value + 'ms'">
+            <span id="speed-val" class="mono" style="font-size: 0.8rem; color: var(--text-muted); min-width: 50px;">600ms</span>
+          </div>
+        </div>
+
+        <!-- Game Layout -->
+        <div class="game-layout">
+          <div class="game-main">
+            <!-- Board -->
+            <div class="board" id="game-board"></div>
+
+            <!-- Message -->
+            <div class="game-message hidden" id="game-message"></div>
+
+            <!-- Keyboard -->
+            <div class="keyboard" id="game-keyboard"></div>
+          </div>
+
+          <!-- Sidebar -->
+          <div class="game-sidebar">
+            <!-- AI Info Panel -->
+            <div class="info-panel">
+              <h3>📊 Game Stats</h3>
+              <div class="info-item">
+                <span class="label">Turn</span>
+                <span class="value" id="turn-count">0 / 6</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Candidates</span>
+                <span class="value" id="candidate-count">2,309</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Best Next Guess</span>
+                <span class="value" id="top-guess">—</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Info Gain</span>
+                <span class="value" id="info-gain">—</span>
+              </div>
+            </div>
+
+            <!-- How To Play -->
+            <div class="info-panel">
+              <h3>📖 How To Play</h3>
+              <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.7;">
+                <p><strong>Play Mode:</strong> Type a 5-letter word and press Enter.</p>
+                <p class="mt-sm">
+                  <span style="display: inline-block; width: 20px; height: 20px; background: var(--wordle-green); border-radius: 3px; vertical-align: middle;"></span>
+                  Green = correct letter, correct spot
+                </p>
+                <p class="mt-sm">
+                  <span style="display: inline-block; width: 20px; height: 20px; background: var(--wordle-yellow); border-radius: 3px; vertical-align: middle;"></span>
+                  Yellow = correct letter, wrong spot
+                </p>
+                <p class="mt-sm">
+                  <span style="display: inline-block; width: 20px; height: 20px; background: var(--wordle-gray); border-radius: 3px; vertical-align: middle;"></span>
+                  Gray = letter not in word
+                </p>
+                <p class="mt-md"><strong>AI Mode:</strong> Click "Let AI Solve" to watch the entropy-greedy heuristic play automatically.</p>
+              </div>
+            </div>
+
+            <!-- Session Stats -->
+            <div class="info-panel">
+              <h3>🏆 Session Stats</h3>
+              <div class="info-item">
+                <span class="label">Games Played</span>
+                <span class="value" id="session-played">0</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Win Rate</span>
+                <span class="value" id="session-winrate">—</span>
+              </div>
+              <div id="session-dist" class="mt-md"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <span>Wordle RL Solver — Reinforcement Learning Final Project</span>
+      <span>Entropy Heuristic Solver · Ported to JavaScript</span>
+    </div>
+  </footer>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <script src="js/nav.js"></script>
+  <script src="js/solver.js"></script>
+  <script src="js/board.js"></script>
+  <script src="js/game.js"></script>
+  <script>
+    // Initialize game
+    async function initPage() {
+      // Show loading state
+      const boardEl = document.getElementById('game-board');
+      boardEl.innerHTML = '<p style="color: var(--text-muted); padding: 2rem;">Loading word lists...</p>';
+
+      await Solver.loadWordLists();
+
+      Game.init(
+        document.getElementById('game-board'),
+        document.getElementById('game-keyboard'),
+        document.getElementById('game-message'),
+        document.getElementById('game-board').closest('.game-layout').querySelector('.game-sidebar')
+      );
+
+      await Game.newGame();
+      Game.enableKeyboard();
+      updateSessionStats();
+    }
+
+    function startNewGame() {
+      Game.stopAI();
+      Game.newGame();
+      updateSessionStats();
+    }
+
+    function startAISolve() {
+      if (Game.isAIRunning) {
+        Game.stopAI();
+        return;
+      }
+      const speed = parseInt(document.getElementById('speed-slider').value);
+      Game.setAISpeed(speed);
+      Game.aiSolve(speed).then(() => updateSessionStats());
+    }
+
+    function updateSessionStats() {
+      const stats = Game.getStats();
+      const playedEl = document.getElementById('session-played');
+      const winrateEl = document.getElementById('session-winrate');
+      const distEl = document.getElementById('session-dist');
+
+      if (playedEl) playedEl.textContent = stats.played;
+      if (winrateEl) {
+        winrateEl.textContent = stats.played > 0
+          ? Math.round(stats.won / stats.played * 100) + '%'
+          : '—';
+      }
+
+      // Mini distribution
+      if (distEl && stats.played > 0 && stats.distribution) {
+        const maxVal = Math.max(...Object.values(stats.distribution), 1);
+        let html = '<div class="dist-chart">';
+        for (let i = 1; i <= 6; i++) {
+          const val = stats.distribution[String(i)] || 0;
+          const pct = Math.max(val / maxVal * 100, 8);
+          html += `
+            <div class="dist-row">
+              <span class="dist-label">${i}</span>
+              <div class="dist-bar green" style="width: ${pct}%;">${val}</div>
+            </div>`;
+        }
+        html += '</div>';
+        distEl.innerHTML = html;
+      }
+    }
+
+    initPage();
+  </script>
+</body>
+</html>
