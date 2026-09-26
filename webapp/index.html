@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wordle RL Solver — DQN Agent vs Entropy Heuristic</title>
+  <meta name="description" content="A reinforcement learning Wordle solver featuring an embedding-based DQN agent and entropy-greedy heuristic. Play interactively, view training results, and explore the system architecture.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🟩</text></svg>">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-brand">
+        <span class="brand-icon">
+          <span class="tile">W</span>
+          <span class="tile">R</span>
+          <span class="tile">L</span>
+        </span>
+        Wordle RL
+      </a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links">
+        <li><a href="index.html" class="active">🏠 Home</a></li>
+        <li><a href="play.html">🎮 Play</a></li>
+        <li><a href="results.html">📊 Results</a></li>
+        <li><a href="architecture.html">🏗️ Architecture</a></li>
+        <li><a href="team.html">👥 Team</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="dot"></span>
+          Reinforcement Learning Final Project
+        </div>
+        <h1>
+          <span class="gradient-text">Wordle Solver</span><br>
+          DQN Agent vs Entropy Heuristic
+        </h1>
+        <p class="hero-description">
+          A complete reinforcement learning implementation featuring a trained
+          <strong>embedding-based DQN agent</strong> that generalizes to unseen words,
+          alongside a near-optimal entropy-greedy heuristic baseline.
+        </p>
+        <div class="hero-actions">
+          <a href="play.html" class="btn btn-primary btn-lg">🎮 Play Wordle</a>
+          <a href="results.html" class="btn btn-secondary btn-lg">📊 View Results</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="section">
+      <div class="container">
+        <div class="stats-row">
+          <div class="stat-card fade-in">
+            <div class="stat-value green" data-count="98.5" data-suffix="%">0%</div>
+            <div class="stat-label">DQN Win Rate</div>
+          </div>
+          <div class="stat-card fade-in">
+            <div class="stat-value purple" data-count="3.63">0</div>
+            <div class="stat-label">Avg Guesses (DQN)</div>
+          </div>
+          <div class="stat-card fade-in">
+            <div class="stat-value teal" data-count="2309">0</div>
+            <div class="stat-label">Answer Words</div>
+          </div>
+          <div class="stat-card fade-in">
+            <div class="stat-value pink" data-count="20000">0</div>
+            <div class="stat-label">Training Episodes</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="section">
+      <div class="container">
+        <div class="section-header fade-in">
+          <span class="section-label">How It Works</span>
+          <h2 class="section-title">Two Solving Strategies</h2>
+          <p class="section-subtitle">Comparing a learned DQN policy against a mathematically-driven entropy heuristic.</p>
+        </div>
+
+        <div class="comparison-grid fade-in">
+          <div class="comparison-card highlight">
+            <span class="badge badge-purple">RL Agent</span>
+            <h3 class="agent-name mt-md">Embedding DQN v2</h3>
+            <div class="big-stat" style="color: var(--accent-primary);">98.5%</div>
+            <div class="stat-desc">Win Rate (200 words)</div>
+            <div class="mt-lg" style="text-align: left;">
+              <p class="card-text">• Scores <code>(state, word)</code> pairs via neural network</p>
+              <p class="card-text">• Double DQN + Prioritized Experience Replay</p>
+              <p class="card-text">• Curriculum learning: 200 → 8,636 words</p>
+              <p class="card-text">• <strong>Generalizes</strong> to unseen words</p>
+            </div>
+          </div>
+
+          <div class="comparison-card">
+            <span class="badge badge-green">Baseline</span>
+            <h3 class="agent-name mt-md">Entropy Heuristic</h3>
+            <div class="big-stat" style="color: var(--wordle-green-bright);">100%</div>
+            <div class="stat-desc">Win Rate (all 2,309)</div>
+            <div class="mt-lg" style="text-align: left;">
+              <p class="card-text">• Maximizes expected information gain (Shannon entropy)</p>
+              <p class="card-text">• Greedy one-step-lookahead policy</p>
+              <p class="card-text">• Near-optimal performance (~4.19 avg guesses)</p>
+              <p class="card-text">• Used by top Wordle solvers (3Blue1Brown)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features / Quick Links -->
+    <section class="section">
+      <div class="container">
+        <div class="section-header fade-in">
+          <span class="section-label">Explore</span>
+          <h2 class="section-title">Project Highlights</h2>
+        </div>
+
+        <div class="card-grid fade-in">
+          <a href="play.html" class="card" style="text-decoration: none;">
+            <div class="card-icon" style="background: rgba(83, 141, 78, 0.2);">🎮</div>
+            <h3 class="card-title">Interactive Play</h3>
+            <p class="card-text">Play Wordle yourself or watch the AI entropy solver play live with step-by-step animations and stats.</p>
+          </a>
+
+          <a href="results.html" class="card" style="text-decoration: none;">
+            <div class="card-icon" style="background: rgba(124, 92, 252, 0.2);">📊</div>
+            <h3 class="card-title">Training Results</h3>
+            <p class="card-text">Interactive charts showing win rates, training loss, curriculum learning stages, and benchmark comparisons.</p>
+          </a>
+
+          <a href="architecture.html" class="card" style="text-decoration: none;">
+            <div class="card-icon" style="background: rgba(94, 234, 212, 0.2);">🏗️</div>
+            <h3 class="card-title">System Architecture</h3>
+            <p class="card-text">Deep dive into the EmbeddingQNetwork, MDP formulation, RL training loop, and agent decision pipeline.</p>
+          </a>
+
+          <a href="results.html#benchmarks" class="card" style="text-decoration: none;">
+            <div class="card-icon" style="background: rgba(244, 114, 182, 0.2);">🏆</div>
+            <h3 class="card-title">Benchmarks</h3>
+            <p class="card-text">Side-by-side comparison: DQN (98.5% / 3.63 avg) vs Entropy Heuristic (100% / 3.11 avg) with OOD testing.</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tech Stack -->
+    <section class="section">
+      <div class="container">
+        <div class="section-header fade-in">
+          <span class="section-label">Built With</span>
+          <h2 class="section-title">Technology Stack</h2>
+        </div>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;" class="fade-in">
+          <span class="badge badge-purple">Python 3.8+</span>
+          <span class="badge badge-purple">PyTorch</span>
+          <span class="badge badge-green">NumPy</span>
+          <span class="badge badge-green">Matplotlib</span>
+          <span class="badge badge-teal">SciPy</span>
+          <span class="badge badge-teal">Double DQN</span>
+          <span class="badge badge-purple">PER</span>
+          <span class="badge badge-green">Curriculum Learning</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <span>Wordle RL Solver — Reinforcement Learning Final Project</span>
+      <span>Embedding DQN v2 · Entropy Heuristic · 2026</span>
+    </div>
+  </footer>
+
+  <script src="js/nav.js"></script>
+</body>
+</html>
